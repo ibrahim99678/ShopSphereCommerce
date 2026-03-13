@@ -1,9 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ShopSphere.Contract\ShopSphere.Contract.csproj" />
+    <ProjectReference Include="..\ShopSphere.DAL\ShopSphere.DAL.csproj" />
+    <ProjectReference Include="..\ShopSphere.Domain\ShopSphere.Domain.csproj" />
+  </ItemGroup>
 
 </Project>
