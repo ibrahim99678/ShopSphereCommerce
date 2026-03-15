@@ -1,0 +1,98 @@
+@model ShopSphere.Contract.Dtos.OrderDto
+@using ShopSphere.Contract.Enums
+
+@{
+    ViewData["Title"] = "Order Details";
+}
+
+<div class="d-flex justify-content-between align-items-center">
+    <h2>Order Details</h2>
+    <a asp-area="Admin" asp-controller="Orders" asp-action="Index" class="btn btn-outline-secondary">Back</a>
+</div>
+
+@if (TempData["Success"] is string success && !string.IsNullOrWhiteSpace(success))
+{
+    <div class="alert alert-success mt-3">@success</div>
+}
+
+@if (TempData["Error"] is string error && !string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-danger mt-3">@error</div>
+}
+
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div><strong>Order Number:</strong> @Model.OrderNumber</div>
+                <div><strong>Status:</strong> @Model.Status</div>
+                <div><strong>Date:</strong> @Model.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+            </div>
+            <div class="col-md-4">
+                <div><strong>Customer:</strong> @Model.CustomerName</div>
+                <div><strong>Mobile:</strong> @Model.Mobile</div>
+            </div>
+            <div class="col-md-4">
+                <div><strong>Total:</strong> @Model.Total.ToString("0.00")</div>
+                <div>
+                    <strong>Payment:</strong>
+                    @(Model.Payment is null ? PaymentStatus.Pending : Model.Payment.Status)
+                    @if (Model.Payment?.TransactionId is not null)
+                    {
+                        <span class="text-muted">(@Model.Payment.TransactionId)</span>
+                    }
+                </div>
+            </div>
+        </div>
+        <hr />
+        <div class="text-break" style="white-space: pre-line;">
+            <strong>Address:</strong>
+            <div>@Model.Address</div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">Update Status</div>
+    <div class="card-body">
+        <form asp-area="Admin" asp-controller="Orders" asp-action="UpdateStatus" method="post" class="row g-2 align-items-end">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="col-md-4">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    @foreach (var s in Enum.GetValues<OrderStatus>())
+                    {
+                        <option value="@s" selected="@(Model.Status == s ? "selected" : null)">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary">Update</button>
+            </div>
+        </form>
+        <div class="text-muted mt-2">Allowed: Pending → Processing/Cancelled, Processing → Shipped/Cancelled, Shipped → Delivered.</div>
+    </div>
+</div>
+
+<h4 class="mt-4">Items</h4>
+<table class="table table-striped mt-2">
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th class="text-end">Price</th>
+            <th class="text-end">Qty</th>
+            <th class="text-end">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var i in Model.Items)
+    {
+        <tr>
+            <td class="text-break">@i.ProductName</td>
+            <td class="text-end">@i.Price.ToString("0.00")</td>
+            <td class="text-end">@i.Quantity</td>
+            <td class="text-end">@((i.Price * i.Quantity).ToString("0.00"))</td>
+        </tr>
+    }
+    </tbody>
+</table>

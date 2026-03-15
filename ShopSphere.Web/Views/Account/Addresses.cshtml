@@ -1,0 +1,69 @@
+@model IReadOnlyList<ShopSphere.Contract.Dtos.AddressDto>
+
+@{
+    ViewData["Title"] = "Addresses";
+}
+
+<div class="d-flex justify-content-between align-items-center">
+    <h2>Addresses</h2>
+    <a asp-action="CreateAddress" class="btn btn-primary">Add Address</a>
+</div>
+
+@if (!Model.Any())
+{
+    <p>No addresses found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Recipient</th>
+                <th>Address</th>
+                <th>Phone</th>
+                <th>Default</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var address in Model)
+        {
+            <tr>
+                <td>@address.FullName</td>
+                <td>
+                    @address.AddressLine1
+                    @if (!string.IsNullOrWhiteSpace(address.AddressLine2))
+                    {
+                        <span>, @address.AddressLine2</span>
+                    }
+                    <span>, @address.City, @address.Country</span>
+                    @if (!string.IsNullOrWhiteSpace(address.PostalCode))
+                    {
+                        <span> (@address.PostalCode)</span>
+                    }
+                </td>
+                <td>@address.PhoneNumber</td>
+                <td>
+                    @if (address.IsDefault)
+                    {
+                        <span class="badge bg-success">Default</span>
+                    }
+                </td>
+                <td class="text-end">
+                    <a asp-action="EditAddress" asp-route-id="@address.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <form asp-action="DeleteAddress" asp-route-id="@address.Id" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                    @if (!address.IsDefault)
+                    {
+                        <form asp-action="SetDefaultAddress" asp-route-id="@address.Id" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Set Default</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+

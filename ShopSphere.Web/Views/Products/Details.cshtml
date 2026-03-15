@@ -1,0 +1,176 @@
+@model ShopSphere.Web.Models.ProductDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Product.Name;
+}
+
+<div class="d-flex justify-content-between align-items-center">
+    <h2>@Model.Product.Name</h2>
+    <a asp-controller="Products" asp-action="Index" class="btn btn-outline-secondary">Back</a>
+</div>
+
+@if (TempData["Success"] is string success && !string.IsNullOrWhiteSpace(success))
+{
+    <div class="alert alert-success mt-3">@success</div>
+}
+
+@if (TempData["Error"] is string error && !string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-danger mt-3">@error</div>
+}
+
+<div class="row mt-3">
+    <div class="col-md-4">
+        @{
+            var primary = Model.Images.FirstOrDefault(i => i.IsPrimary)?.ImageUrl ?? Model.Product.ImageUrl;
+        }
+        @if (!string.IsNullOrWhiteSpace(primary))
+        {
+            <img src="@primary" class="product-img-main rounded" alt="Product image" />
+        }
+
+        @if (Model.Images.Any())
+        {
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                @foreach (var img in Model.Images.OrderBy(i => i.SortOrder))
+                {
+                    <a href="@img.ImageUrl" target="_blank">
+                        <img src="@img.ImageUrl" class="product-img-thumb rounded" alt="Product thumbnail" />
+                    </a>
+                }
+            </div>
+        }
+    </div>
+    <div class="col-md-8">
+        <div class="mb-2">
+            <strong>Price:</strong> @Model.Product.Price.ToString("0.00")
+        </div>
+        <div class="mb-2">
+            <strong>Category:</strong> @Model.Product.CategoryName
+        </div>
+        <div class="mb-2">
+            <strong>Rating:</strong>
+            @(Model.ReviewCount == 0 ? "No reviews yet" : $"{Model.AverageRating:0.0}/5 ({Model.ReviewCount})")
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.Product.Brand))
+        {
+            <div class="mb-2">
+                <strong>Brand:</strong> @Model.Product.Brand
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Product.Description))
+        {
+            <div class="mb-2">
+                @Model.Product.Description
+            </div>
+        }
+    </div>
+</div>
+
+<h3 class="mt-4">Variants</h3>
+
+@if (!Model.Variants.Any())
+{
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <div>No variants available.</div>
+            <div class="text-muted">Stock: @Model.Product.StockQuantity</div>
+        </div>
+        <form asp-controller="Cart" asp-action="Add" method="post" class="d-inline">
+            <input type="hidden" name="productId" value="@Model.Product.Id" />
+            <input type="hidden" name="quantity" value="1" />
+            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+            <button type="submit" class="btn btn-primary" @(Model.Product.StockQuantity <= 0 ? "disabled" : null)>Add to Cart</button>
+        </form>
+    </div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Size</th>
+                <th>Color</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">Stock</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var v in Model.Variants.Where(x => x.IsActive))
+        {
+            <tr>
+                <td>@v.Sku</td>
+                <td>@v.Size</td>
+                <td>@v.Color</td>
+                <td class="text-end">@((v.PriceOverride ?? Model.Product.Price).ToString("0.00"))</td>
+                <td class="text-end">@v.StockQuantity</td>
+                <td class="text-end">
+                    <form asp-controller="Cart" asp-action="Add" method="post" class="d-inline">
+                        <input type="hidden" name="productId" value="@Model.Product.Id" />
+                        <input type="hidden" name="variantId" value="@v.Id" />
+                        <input type="hidden" name="quantity" value="1" />
+                        <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                        <button type="submit" class="btn btn-sm btn-outline-primary" @(v.StockQuantity <= 0 ? "disabled" : null)>Add</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+<h3 class="mt-4">Reviews</h3>
+
+@if (!Model.Reviews.Any())
+{
+    <p>No reviews yet.</p>
+}
+else
+{
+    @foreach (var r in Model.Reviews)
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div class="fw-semibold">@r.ReviewerName</div>
+                    <div class="text-muted">@r.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+                </div>
+                <div class="mt-1"><strong>Rating:</strong> @r.Rating/5</div>
+                @if (!string.IsNullOrWhiteSpace(r.Title))
+                {
+                    <div class="mt-2 fw-semibold">@r.Title</div>
+                }
+                <div class="mt-2" style="white-space: pre-line;">@r.Comment</div>
+            </div>
+        </div>
+    }
+}
+
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <h4 class="mt-4">Write a Review</h4>
+    <form asp-controller="Reviews" asp-action="Create" method="post" class="mt-2">
+        <input type="hidden" name="ProductId" value="@Model.Product.Id" />
+        <div class="mb-3">
+            <label class="form-label">Rating</label>
+            <select name="Rating" class="form-select">
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Title (optional)</label>
+            <input name="Title" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Comment</label>
+            <textarea name="Comment" class="form-control" rows="4"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Review</button>
+    </form>
+}

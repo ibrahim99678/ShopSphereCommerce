@@ -1,0 +1,73 @@
+@model ShopSphere.Web.Models.PaymentPayViewModel
+@using ShopSphere.Contract.Enums
+
+@{
+    ViewData["Title"] = "Payment";
+}
+
+<div class="d-flex justify-content-between align-items-center">
+    <h2>Payment</h2>
+    <a asp-controller="Cart" asp-action="Index" class="btn btn-outline-secondary">Back to Cart</a>
+</div>
+
+@if (TempData["Success"] is string success && !string.IsNullOrWhiteSpace(success))
+{
+    <div class="alert alert-success mt-3">@success</div>
+}
+
+@if (TempData["Error"] is string error && !string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-danger mt-3">@error</div>
+}
+
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div><strong>Order:</strong> @Model.Order.OrderNumber</div>
+                <div><strong>Amount:</strong> @Model.Payment.Amount.ToString("0.00")</div>
+                <div><strong>Provider:</strong> @Model.Payment.Provider</div>
+                <div><strong>Status:</strong> @Model.Payment.Status</div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex gap-2">
+                    @if (Model.Payment.Status != PaymentStatus.Paid)
+                    {
+                        <form asp-controller="Payment" asp-action="Complete" method="post" class="d-inline">
+                            <input type="hidden" name="orderId" value="@Model.Order.Id" />
+                            <button type="submit" class="btn btn-primary">Pay Now (Mock)</button>
+                        </form>
+                        <form asp-controller="Payment" asp-action="Fail" method="post" class="d-inline">
+                            <input type="hidden" name="orderId" value="@Model.Order.Id" />
+                            <button type="submit" class="btn btn-outline-danger">Simulate Failure</button>
+                        </form>
+                    }
+                    <a asp-controller="Checkout" asp-action="Success" asp-route-id="@Model.Order.Id" class="btn btn-outline-secondary">View Order</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="mt-4">Order Summary</h4>
+<table class="table table-striped mt-2">
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th class="text-end">Price</th>
+            <th class="text-end">Qty</th>
+            <th class="text-end">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var i in Model.Order.Items)
+    {
+        <tr>
+            <td class="text-break">@i.ProductName</td>
+            <td class="text-end">@i.Price.ToString("0.00")</td>
+            <td class="text-end">@i.Quantity</td>
+            <td class="text-end">@((i.Price * i.Quantity).ToString("0.00"))</td>
+        </tr>
+    }
+    </tbody>
+</table>

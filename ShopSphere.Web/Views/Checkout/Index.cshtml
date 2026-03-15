@@ -1,0 +1,97 @@
+@model ShopSphere.Web.Models.CheckoutViewModel
+
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<div class="d-flex justify-content-between align-items-center">
+    <h2>Checkout</h2>
+    <a asp-controller="Cart" asp-action="Index" class="btn btn-outline-secondary">Back to Cart</a>
+</div>
+
+<div class="row mt-3">
+    <div class="col-lg-7">
+        <form asp-controller="Checkout" asp-action="PlaceOrder" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @if (Model.StockIssues.Any())
+            {
+                <div class="alert alert-danger">
+                    <div class="fw-semibold">Stock issues</div>
+                    <ul class="mb-0">
+                        @foreach (var issue in Model.StockIssues)
+                        {
+                            <li>@issue</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            @if (Model.Addresses.Any())
+            {
+                <div class="mb-3">
+                    <label class="form-label">Saved Address</label>
+                    <select asp-for="SelectedAddressId" class="form-select">
+                        <option value="">Manual</option>
+                        @foreach (var a in Model.Addresses.OrderByDescending(x => x.IsDefault).ThenBy(x => x.Id))
+                        {
+                            <option value="@a.Id" selected="@(Model.SelectedAddressId == a.Id ? "selected" : null)">
+                                @(a.IsDefault ? "[Default] " : "")@a.FullName - @a.AddressLine1, @a.City
+                            </option>
+                        }
+                    </select>
+                </div>
+            }
+
+            <div class="mb-3">
+                <label asp-for="CustomerName" class="form-label"></label>
+                <input asp-for="CustomerName" class="form-control" />
+                <span asp-validation-for="CustomerName" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Mobile" class="form-label"></label>
+                <input asp-for="Mobile" class="form-control" />
+                <span asp-validation-for="Mobile" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Address" class="form-label"></label>
+                <textarea asp-for="Address" class="form-control" rows="5"></textarea>
+                <span asp-validation-for="Address" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary" @(Model.CanPlaceOrder ? null : "disabled")>Place Order</button>
+        </form>
+    </div>
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">Order Summary</div>
+            <div class="card-body">
+                @foreach (var item in Model.Cart.Items)
+                {
+                    <div class="d-flex justify-content-between">
+                        <div class="text-truncate" style="max-width: 70%;">
+                            @item.ProductName
+                            @if (!string.IsNullOrWhiteSpace(item.VariantLabel))
+                            {
+                                <span class="text-muted">(@item.VariantLabel)</span>
+                            }
+                            <span class="text-muted">x @item.Quantity</span>
+                        </div>
+                        <div>@item.LineTotal.ToString("0.00")</div>
+                    </div>
+                }
+                <hr />
+                <div class="d-flex justify-content-between">
+                    <div class="fw-semibold">Subtotal</div>
+                    <div>@Model.Cart.Subtotal.ToString("0.00")</div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <div class="fw-semibold">Total</div>
+                    <div>@Model.Cart.Total.ToString("0.00")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

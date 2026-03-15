@@ -28,13 +28,65 @@ public class OrderService : IOrderService
         return orders.Select(MapToDto).ToList();
     }
 
+    public async Task<IReadOnlyList<OrderDto>> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var orders = await _unitOfWork.Orders.GetAllByUserIdWithItemsAsync(userId, cancellationToken);
+        return orders.Select(MapToDto).ToList();
+    }
+
     public async Task<OrderDto> CreateOrderAsync(
         string customerName,
         string mobile,
         string address,
         IReadOnlyList<CartItemDto> items,
+        string? userId = null,
         CancellationToken cancellationToken = default)
     {
+        if (items.Count == 0)
+        {
+            throw new InvalidOperationException("Cart is empty.");
+        }
+
+        foreach (var item in items)
+        {
+            if (item.Quantity < 1)
+            {
+                throw new InvalidOperationException("Invalid item quantity.");
+            }
+        }
+
+        foreach (var item in items.Where(i => i.ProductVariantId is null))
+        {
+            var product = await _unitOfWork.Products.GetByIdAsync(item.ProductId, cancellationToken);
+            if (product is null)
+            {
+                throw new InvalidOperationException("One or more products are not available.");
+            }
+
+            if (product.StockQuantity < item.Quantity)
+            {
+                throw new InvalidOperationException("Insufficient stock for one or more items.");
+            }
+
+            product.StockQuantity -= item.Quantity;
+        }
+
+        foreach (var item in items.Where(i => i.ProductVariantId is not null))
+        {
+            var variant = await _unitOfWork.ProductVariants.GetByIdAsync(item.ProductVariantId!.Value, cancellationToken);
+            if (variant is null || variant.ProductId != item.ProductId || !variant.IsActive)
+            {
+                throw new InvalidOperationException("One or more product variants are not available.");
+            }
+
+            if (variant.StockQuantity < item.Quantity)
+            {
+                throw new InvalidOperationException("Insufficient stock for one or more items.");
+            }
+
+            variant.StockQuantity -= item.Quantity;
+        }
+
         var orderItems = items.Select(i => new OrderItem
         {
             ProductId = i.ProductId,
@@ -48,6 +100,7 @@ public class OrderService : IOrderService
         var order = new Order
         {
             OrderNumber = GenerateOrderNumber(),
+            UserId = userId,
             CustomerName = customerName,
             Mobile = mobile,
             Address = address,
@@ -70,10 +123,34 @@ public class OrderService : IOrderService
             return false;
         }
 
+        var current = (OrderStatus)(int)order.Status;
+        if (!IsAllowedTransition(current, status))
+        {
+            throw new InvalidOperationException($"Invalid status transition: {current} → {status}.");
+        }
+
         order.Status = (DomainOrderStatus)(int)status;
         _unitOfWork.Orders.Update(order);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    private static bool IsAllowedTransition(OrderStatus current, OrderStatus next)
+    {
+        if (current == next)
+        {
+            return true;
+        }
+
+        return current switch
+        {
+            OrderStatus.Pending => next is OrderStatus.Processing or OrderStatus.Cancelled,
+            OrderStatus.Processing => next is OrderStatus.Shipped or OrderStatus.Cancelled,
+            OrderStatus.Shipped => next is OrderStatus.Delivered,
+            OrderStatus.Delivered => false,
+            OrderStatus.Cancelled => false,
+            _ => false
+        };
     }
 
     private static string GenerateOrderNumber()
@@ -87,12 +164,24 @@ public class OrderService : IOrderService
         {
             Id = entity.Id,
             OrderNumber = entity.OrderNumber,
+            UserId = entity.UserId,
             CustomerName = entity.CustomerName,
             Mobile = entity.Mobile,
             Address = entity.Address,
             Status = (OrderStatus)(int)entity.Status,
             Total = entity.Total,
             CreatedAtUtc = entity.CreatedAtUtc,
+            Payment = entity.Payment is null ? null : new PaymentDto
+            {
+                Id = entity.Payment.Id,
+                OrderId = entity.Payment.OrderId,
+                Amount = entity.Payment.Amount,
+                Provider = entity.Payment.Provider,
+                Status = (PaymentStatus)(int)entity.Payment.Status,
+                TransactionId = entity.Payment.TransactionId,
+                SessionId = entity.Payment.SessionId,
+                CreatedAtUtc = entity.Payment.CreatedAtUtc
+            },
             Items = entity.OrderItems.Select(i => new OrderItemDto
             {
                 Id = i.Id,
@@ -105,4 +194,3 @@ public class OrderService : IOrderService
         };
     }
 }
-

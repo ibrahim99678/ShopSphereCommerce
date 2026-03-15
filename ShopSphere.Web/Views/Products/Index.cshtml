@@ -1,0 +1,168 @@
+@model ShopSphere.Web.Models.ProductBrowseViewModel
+
+@{
+    ViewData["Title"] = "Products";
+}
+
+<h2>Products</h2>
+
+@if (User.IsInRole("Admin"))
+{
+    <div class="mb-3 d-flex gap-2">
+        <a asp-area="Admin" asp-controller="Product" asp-action="Index" class="btn btn-outline-primary">Admin Products</a>
+        <a asp-area="Admin" asp-controller="Product" asp-action="Create" class="btn btn-primary">Create Product</a>
+    </div>
+}
+
+<form method="get" class="row g-2 align-items-end mt-2">
+    <div class="col-md-4">
+        <label class="form-label">Search</label>
+        <input name="Query" value="@(Model.Request.Query ?? "")" class="form-control" placeholder="Search by name, SKU, brand..." />
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Category</label>
+        <select name="CategoryId" class="form-select">
+            <option value="">All</option>
+            @foreach (var c in Model.Categories.OrderBy(x => x.Name))
+            {
+                <option value="@c.Id" selected="@(Model.Request.CategoryId == c.Id ? "selected" : null)">@c.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Brand</label>
+        <select name="Brand" class="form-select">
+            <option value="">All</option>
+            @foreach (var b in Model.Brands)
+            {
+                <option value="@b" selected="@(Model.Request.Brand == b ? "selected" : null)">@b</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Sort</label>
+        <select name="Sort" class="form-select">
+            <option value="newest" selected="@(Model.Request.Sort == "newest" ? "selected" : null)">Newest</option>
+            <option value="price_asc" selected="@(Model.Request.Sort == "price_asc" ? "selected" : null)">Price (Low → High)</option>
+            <option value="price_desc" selected="@(Model.Request.Sort == "price_desc" ? "selected" : null)">Price (High → Low)</option>
+            <option value="name_asc" selected="@(Model.Request.Sort == "name_asc" ? "selected" : null)">Name (A → Z)</option>
+            <option value="name_desc" selected="@(Model.Request.Sort == "name_desc" ? "selected" : null)">Name (Z → A)</option>
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label class="form-label">Min Price</label>
+        <input name="MinPrice" type="number" step="0.01" value="@(Model.Request.MinPrice?.ToString() ?? "")" class="form-control" />
+    </div>
+
+    <div class="col-md-2">
+        <label class="form-label">Max Price</label>
+        <input name="MaxPrice" type="number" step="0.01" value="@(Model.Request.MaxPrice?.ToString() ?? "")" class="form-control" />
+    </div>
+
+    <div class="col-md-2">
+        <label class="form-label">Page Size</label>
+        <select name="PageSize" class="form-select">
+            <option value="12" selected="@(Model.Request.PageSize == 12 ? "selected" : null)">12</option>
+            <option value="24" selected="@(Model.Request.PageSize == 24 ? "selected" : null)">24</option>
+            <option value="48" selected="@(Model.Request.PageSize == 48 ? "selected" : null)">48</option>
+        </select>
+    </div>
+
+    <input type="hidden" name="Page" value="1" />
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Apply</button>
+        <a asp-controller="Products" asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+    </div>
+</form>
+
+@if (!Model.Results.Items.Any())
+{
+    <p class="mt-3">No products found.</p>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-3 mt-1">
+        @foreach (var p in Model.Results.Items)
+        {
+            <div class="col">
+                <div class="card h-100">
+                    @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                    {
+                        <img src="@p.ImageUrl" class="card-img-top product-img-card" alt="Product image" />
+                    }
+                    <div class="card-body">
+                        <h5 class="card-title">@p.Name</h5>
+                        <div class="text-muted">@p.CategoryName</div>
+                        @if (!string.IsNullOrWhiteSpace(p.Brand))
+                        {
+                            <div class="text-muted">@p.Brand</div>
+                        }
+                        <div class="mt-2"><strong>@p.Price.ToString("0.00")</strong></div>
+                    </div>
+                    <div class="card-footer bg-white border-0">
+                        <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="btn btn-sm btn-outline-primary">View</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (Model.Results.TotalPages > 1)
+{
+    var current = Model.Results.Page;
+    var totalPages = Model.Results.TotalPages;
+    var start = Math.Max(1, current - 2);
+    var end = Math.Min(totalPages, start + 4);
+    start = Math.Max(1, end - 4);
+
+    <nav class="mt-4">
+        <ul class="pagination">
+            <li class="page-item @(current <= 1 ? "disabled" : "")">
+                <a class="page-link"
+                   asp-controller="Products" asp-action="Index"
+                   asp-route-Page="@(current - 1)"
+                   asp-route-PageSize="@Model.Request.PageSize"
+                   asp-route-Sort="@Model.Request.Sort"
+                   asp-route-Query="@Model.Request.Query"
+                   asp-route-Brand="@Model.Request.Brand"
+                   asp-route-CategoryId="@Model.Request.CategoryId"
+                   asp-route-MinPrice="@Model.Request.MinPrice"
+                   asp-route-MaxPrice="@Model.Request.MaxPrice">Previous</a>
+            </li>
+
+            @for (var p = start; p <= end; p++)
+            {
+                <li class="page-item @(p == current ? "active" : "")">
+                    <a class="page-link"
+                       asp-controller="Products" asp-action="Index"
+                       asp-route-Page="@p"
+                       asp-route-PageSize="@Model.Request.PageSize"
+                       asp-route-Sort="@Model.Request.Sort"
+                       asp-route-Query="@Model.Request.Query"
+                       asp-route-Brand="@Model.Request.Brand"
+                       asp-route-CategoryId="@Model.Request.CategoryId"
+                       asp-route-MinPrice="@Model.Request.MinPrice"
+                       asp-route-MaxPrice="@Model.Request.MaxPrice">@p</a>
+                </li>
+            }
+
+            <li class="page-item @(current >= totalPages ? "disabled" : "")">
+                <a class="page-link"
+                   asp-controller="Products" asp-action="Index"
+                   asp-route-Page="@(current + 1)"
+                   asp-route-PageSize="@Model.Request.PageSize"
+                   asp-route-Sort="@Model.Request.Sort"
+                   asp-route-Query="@Model.Request.Query"
+                   asp-route-Brand="@Model.Request.Brand"
+                   asp-route-CategoryId="@Model.Request.CategoryId"
+                   asp-route-MinPrice="@Model.Request.MinPrice"
+                   asp-route-MaxPrice="@Model.Request.MaxPrice">Next</a>
+            </li>
+        </ul>
+    </nav>
+}

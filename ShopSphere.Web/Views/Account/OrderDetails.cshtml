@@ -1,0 +1,72 @@
+@model ShopSphere.Contract.Dtos.OrderDto
+@using ShopSphere.Contract.Enums
+
+@{
+    ViewData["Title"] = "Order Details";
+}
+
+<div class="d-flex justify-content-between align-items-center">
+    <h2>Order Details</h2>
+    <a asp-controller="Account" asp-action="Orders" class="btn btn-outline-secondary">Back</a>
+</div>
+
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div><strong>Order Number:</strong> @Model.OrderNumber</div>
+                <div><strong>Status:</strong> @Model.Status</div>
+                <div><strong>Date:</strong> @Model.CreatedAtUtc.ToLocalTime().ToString("g")</div>
+            </div>
+            <div class="col-md-4">
+                <div><strong>Customer:</strong> @Model.CustomerName</div>
+                <div><strong>Mobile:</strong> @Model.Mobile</div>
+            </div>
+            <div class="col-md-4">
+                <div><strong>Total:</strong> @Model.Total.ToString("0.00")</div>
+                <div>
+                    <strong>Payment:</strong>
+                    @(Model.Payment is null ? "Pending" : $"{Model.Payment.Provider} - {Model.Payment.Status}")
+                    @if (Model.Payment?.TransactionId is not null)
+                    {
+                        <span class="text-muted">(@Model.Payment.TransactionId)</span>
+                    }
+                </div>
+                @if (Model.Payment is null || Model.Payment.Status != PaymentStatus.Paid)
+                {
+                    <div class="mt-2">
+                        <a asp-controller="Payment" asp-action="Pay" asp-route-orderId="@Model.Id" class="btn btn-sm btn-outline-primary">Pay Now</a>
+                    </div>
+                }
+            </div>
+        </div>
+        <hr />
+        <div class="text-break" style="white-space: pre-line;">
+            <strong>Shipping Address:</strong>
+            <div>@Model.Address</div>
+        </div>
+    </div>
+</div>
+
+<h4 class="mt-4">Items</h4>
+<table class="table table-striped mt-2">
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th class="text-end">Price</th>
+            <th class="text-end">Qty</th>
+            <th class="text-end">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var i in Model.Items)
+    {
+        <tr>
+            <td class="text-break">@i.ProductName</td>
+            <td class="text-end">@i.Price.ToString("0.00")</td>
+            <td class="text-end">@i.Quantity</td>
+            <td class="text-end">@((i.Price * i.Quantity).ToString("0.00"))</td>
+        </tr>
+    }
+    </tbody>
+</table>
