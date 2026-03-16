@@ -39,6 +39,7 @@ public class OrderService : IOrderService
         string mobile,
         string address,
         IReadOnlyList<CartItemDto> items,
+        decimal? shippingCharge = null,
         string? userId = null,
         CancellationToken cancellationToken = default)
     {
@@ -95,7 +96,14 @@ public class OrderService : IOrderService
             Quantity = i.Quantity
         }).ToList();
 
-        var total = orderItems.Sum(i => i.Price * i.Quantity);
+        var itemsTotal = orderItems.Sum(i => i.Price * i.Quantity);
+        if (shippingCharge is not null && shippingCharge < 0)
+        {
+            throw new InvalidOperationException("Shipping charge must be a positive amount.");
+        }
+
+        var shipping = shippingCharge is null or 0 ? null : shippingCharge;
+        var total = itemsTotal + (shipping ?? 0m);
 
         var order = new Order
         {
@@ -106,6 +114,7 @@ public class OrderService : IOrderService
             Address = address,
             Status = DomainOrderStatus.Pending,
             Total = total,
+            ShippingCharge = shipping,
             OrderItems = orderItems
         };
 
@@ -170,6 +179,7 @@ public class OrderService : IOrderService
             Address = entity.Address,
             Status = (OrderStatus)(int)entity.Status,
             Total = entity.Total,
+            ShippingCharge = entity.ShippingCharge,
             CreatedAtUtc = entity.CreatedAtUtc,
             Payment = entity.Payment is null ? null : new PaymentDto
             {

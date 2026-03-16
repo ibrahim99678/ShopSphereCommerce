@@ -34,6 +34,10 @@
             </div>
             <div class="col-md-4">
                 <div><strong>Total:</strong> @Model.Total.ToString("0.00")</div>
+                @if (Model.ShippingCharge is not null && Model.ShippingCharge.Value > 0)
+                {
+                    <div><strong>Delivery Charge:</strong> @Model.ShippingCharge.Value.ToString("0.00")</div>
+                }
                 <div>
                     <strong>Payment:</strong>
                     @(Model.Payment is null ? PaymentStatus.Pending : Model.Payment.Status)

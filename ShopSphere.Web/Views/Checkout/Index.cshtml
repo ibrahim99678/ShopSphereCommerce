@@ -61,6 +61,22 @@
                 <span asp-validation-for="Address" class="text-danger"></span>
             </div>
 
+            <div class="card mb-3">
+                <div class="card-header">Delivery</div>
+                <div class="card-body">
+                    <div class="form-check">
+                        <input asp-for="IncludeShippingCharge" class="form-check-input" />
+                        <label asp-for="IncludeShippingCharge" class="form-check-label">Add delivery charge</label>
+                    </div>
+                    <div class="mt-2">
+                        <label asp-for="ShippingCharge" class="form-label">Delivery charge amount</label>
+                        <input asp-for="ShippingCharge" class="form-control" />
+                        <span asp-validation-for="ShippingCharge" class="text-danger"></span>
+                        <div class="form-text">Set 0.00 to disable even if checked.</div>
+                    </div>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-primary" @(Model.CanPlaceOrder ? null : "disabled")>Place Order</button>
         </form>
     </div>
@@ -88,8 +104,12 @@
                     <div>@Model.Cart.Subtotal.ToString("0.00")</div>
                 </div>
                 <div class="d-flex justify-content-between">
+                    <div class="fw-semibold">Delivery</div>
+                    <div>@(Model.IncludeShippingCharge ? Model.ShippingCharge.ToString("0.00") : "0.00")</div>
+                </div>
+                <div class="d-flex justify-content-between">
                     <div class="fw-semibold">Total</div>
-                    <div>@Model.Cart.Total.ToString("0.00")</div>
+                    <div>@((Model.Cart.Total + (Model.IncludeShippingCharge ? Model.ShippingCharge : 0m)).ToString("0.00"))</div>
                 </div>
             </div>
         </div>

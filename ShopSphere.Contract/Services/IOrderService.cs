@@ -13,6 +13,7 @@ public interface IOrderService
         string mobile,
         string address,
         IReadOnlyList<CartItemDto> items,
+        decimal? shippingCharge = null,
         string? userId = null,
         CancellationToken cancellationToken = default);
     Task<bool> UpdateStatusAsync(int id, OrderStatus status, CancellationToken cancellationToken = default);

@@ -23,6 +23,10 @@
                 <span class="text-muted">(@Model.Payment.TransactionId)</span>
             }
         </div>
+        @if (Model.ShippingCharge is not null && Model.ShippingCharge.Value > 0)
+        {
+            <div><strong>Delivery Charge:</strong> @Model.ShippingCharge.Value.ToString("0.00")</div>
+        }
         <div><strong>Total:</strong> @Model.Total.ToString("0.00")</div>
         <div><strong>Date:</strong> @Model.CreatedAtUtc.ToLocalTime().ToString("g")</div>
     </div>

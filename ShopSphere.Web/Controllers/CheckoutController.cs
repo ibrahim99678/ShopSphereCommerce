@@ -60,7 +60,9 @@ public class CheckoutController : Controller
             CustomerName = defaultAddress?.FullName ?? string.Empty,
             Mobile = defaultAddress?.PhoneNumber ?? string.Empty,
             Address = defaultAddress is null ? string.Empty : BuildAddressString(defaultAddress),
-            StockIssues = await BuildStockIssuesAsync(cart, cancellationToken)
+            StockIssues = await BuildStockIssuesAsync(cart, cancellationToken),
+            IncludeShippingCharge = false,
+            ShippingCharge = 0m
         };
 
         return View(model);
@@ -83,6 +85,11 @@ public class CheckoutController : Controller
         if (stockIssues.Count > 0)
         {
             ModelState.AddModelError(string.Empty, "Some items are not available in the requested quantity.");
+        }
+
+        if (model.IncludeShippingCharge && model.ShippingCharge < 0)
+        {
+            ModelState.AddModelError(nameof(model.ShippingCharge), "Shipping charge must be a positive amount.");
         }
 
         if (!ModelState.IsValid)
@@ -127,6 +134,7 @@ public class CheckoutController : Controller
                 model.Mobile,
                 model.Address,
                 cart.Items,
+                model.IncludeShippingCharge ? model.ShippingCharge : null,
                 userId,
                 cancellationToken);
 

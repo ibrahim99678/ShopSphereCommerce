@@ -50,6 +50,7 @@ public class ShopSphereDbContext : IdentityDbContext<ApplicationUser>
         modelBuilder.Entity<Order>(entity =>
         {
             entity.Property(o => o.Total).HasPrecision(18, 2);
+            entity.Property(o => o.ShippingCharge).HasPrecision(18, 2);
             entity.Property(o => o.UserId).HasMaxLength(450);
             entity.HasMany(o => o.OrderItems)
                 .WithOne(oi => oi.Order)

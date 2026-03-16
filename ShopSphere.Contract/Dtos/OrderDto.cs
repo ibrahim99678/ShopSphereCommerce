@@ -12,6 +12,7 @@ public class OrderDto
     public string Address { get; set; } = string.Empty;
     public OrderStatus Status { get; set; }
     public decimal Total { get; set; }
+    public decimal? ShippingCharge { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public PaymentDto? Payment { get; set; }
 

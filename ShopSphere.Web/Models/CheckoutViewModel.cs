@@ -10,6 +10,10 @@ public class CheckoutViewModel
     public int? SelectedAddressId { get; set; }
     public IReadOnlyList<string> StockIssues { get; set; } = Array.Empty<string>();
     public bool CanPlaceOrder => StockIssues.Count == 0;
+    public bool IncludeShippingCharge { get; set; }
+
+    [Range(0, double.MaxValue)]
+    public decimal ShippingCharge { get; set; }
 
     [Required]
     [StringLength(256)]
